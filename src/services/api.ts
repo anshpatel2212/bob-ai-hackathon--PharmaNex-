@@ -38,8 +38,9 @@ const API_BASE = rawApiUrl
 
 
 console.log(
-  "[PharmaGuard] API:",
-  API_BASE
+  "[PharmaGuard] API base URL:",
+  API_BASE,
+  rawApiUrl ? "(from VITE_API_URL)" : "(fallback — using Vite proxy or same-origin)"
 );
 
 
@@ -97,6 +98,8 @@ export async function apiRequest<T = unknown>(
       : `/${endpoint}`;
 
 
+  // Strip a leading /api prefix if the caller accidentally included it —
+  // API_BASE already ends with /api.
   if (
     cleanEndpoint.startsWith("/api/")
   ) {
@@ -180,20 +183,21 @@ export async function apiRequest<T = unknown>(
 
   } catch (error: unknown) {
 
-    const message =
+    // Network error: backend unreachable, CORS failure, or no internet.
+    const rawMsg =
       error instanceof Error
         ? error.message
-        : "Network error. Please check your connection.";
+        : "Network error.";
 
     throw new ApiError(
-      message,
+      `Unable to connect to the authentication server. (${rawMsg})`,
       0
     );
   }
 
 
   // ----------------------------------------------------------
-  // Unauthorized
+  // Unauthorized — clear in-memory token
   // ----------------------------------------------------------
 
   if (
@@ -217,7 +221,7 @@ export async function apiRequest<T = unknown>(
 
 
   // ----------------------------------------------------------
-  // Parse response
+  // Parse response body
   // ----------------------------------------------------------
 
   let responseData: unknown = null;
@@ -245,11 +249,30 @@ export async function apiRequest<T = unknown>(
 
       responseData = null;
     }
+
+  } else if (!response.ok) {
+    // Non-JSON error response — backend probably returned HTML (e.g., Nginx 404
+    // when VITE_API_URL is wrong or the backend is not reachable via the proxy).
+    let bodyPreview = "";
+    try {
+      const text = await response.text();
+      // If it looks like HTML, give a human-readable hint.
+      if (text.trim().startsWith("<")) {
+        bodyPreview = " (Nginx/server returned HTML — check VITE_API_URL is set correctly)";
+      }
+    } catch {
+      // ignore
+    }
+
+    throw new ApiError(
+      `Server error ${response.status}${bodyPreview}`,
+      response.status
+    );
   }
 
 
   // ----------------------------------------------------------
-  // Error
+  // Non-2xx JSON error
   // ----------------------------------------------------------
 
   if (!response.ok) {
@@ -285,15 +308,19 @@ export async function apiRequest<T = unknown>(
         )
       ) {
 
-        const firstError =
-          dataObj.detail[0] as {
-            msg?: string;
-          };
-
+        // FastAPI/Pydantic validation errors — collect all messages.
+        const msgs = (dataObj.detail as { msg?: string; loc?: unknown[] }[])
+          .map(e => {
+            // Pydantic v2 prefixes messages with "Value error, " — strip it.
+            const raw = e.msg || "";
+            return raw.replace(/^Value error,\s*/i, "").trim();
+          })
+          .filter(Boolean);
 
         message =
-          firstError?.msg ||
-          message;
+          msgs.length > 0
+            ? msgs.join(" · ")
+            : message;
 
       } else if (
         typeof dataObj.message ===

@@ -37,6 +37,27 @@ function mapBackendUser(u: BackendUserResponse, isDemo = false): User {
   };
 }
 
+/**
+ * Translate raw errors into user-friendly messages.
+ * Preserves the original backend error detail when available.
+ */
+function toUserMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    // status 0 = network failure (backend unreachable / CORS / no internet)
+    if (err.status === 0) {
+      return 'Unable to connect to the authentication server. Please make sure the backend is running and try again.';
+    }
+    // 422 = Pydantic validation error — show the backend's detail
+    if (err.status === 422) {
+      return err.message || 'Invalid data. Please check all fields and try again.';
+    }
+    // Return the backend's error message directly for 400/401/403/404/500
+    if (err.message) return err.message;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 export interface IAuthService {
   login(credentials: LoginCredentials): Promise<AuthResult>;
   register(data: RegisterData): Promise<AuthResult>;
@@ -49,11 +70,12 @@ export interface IAuthService {
 export class ApiAuthServiceImpl implements IAuthService {
   async register(data: RegisterData): Promise<AuthResult> {
     try {
-      // Send required fields only - never send confirmPassword to backend
+      // Only send fields the backend schema expects.
+      // Never send confirmPassword or agreeTerms to the backend.
       const res = await api.post<BackendAuthResponse>('/auth/register', {
         full_name: data.fullName.trim(),
-        email: data.email.trim(),
-        organization: data.organization.trim(),
+        email: data.email.trim().toLowerCase(),
+        organization: data.organization?.trim() || null,
         role: data.role,
         password: data.password,
       });
@@ -77,7 +99,7 @@ export class ApiAuthServiceImpl implements IAuthService {
         message: 'Account created successfully.',
       };
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Registration failed. Please try again.';
+      const message = toUserMessage(err, 'Registration failed. Please try again.');
       return { success: false, error: message };
     }
   }
@@ -85,7 +107,7 @@ export class ApiAuthServiceImpl implements IAuthService {
   async login(credentials: LoginCredentials): Promise<AuthResult> {
     try {
       const res = await api.post<BackendAuthResponse>('/auth/login', {
-        email: credentials.email.trim(),
+        email: credentials.email.trim().toLowerCase(),
         password: credentials.password,
       });
 
@@ -107,7 +129,7 @@ export class ApiAuthServiceImpl implements IAuthService {
         session,
       };
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Invalid email or password.';
+      const message = toUserMessage(err, 'Invalid email or password.');
       return { success: false, error: message };
     }
   }
@@ -127,6 +149,7 @@ export class ApiAuthServiceImpl implements IAuthService {
       const res = await api.get<BackendUserResponse>('/auth/me');
       return mapBackendUser(res);
     } catch {
+      // 401 = not logged in, any other error = backend down/unavailable
       return null;
     }
   }
