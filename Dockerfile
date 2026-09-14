@@ -15,6 +15,10 @@ RUN npm ci
 # Copy application source
 COPY . .
 
+# Pass build-time environment variable for Vite
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build React/Vite application
 RUN npm run build
 

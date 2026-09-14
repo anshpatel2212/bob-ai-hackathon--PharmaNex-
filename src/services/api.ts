@@ -27,20 +27,43 @@ export class ApiError extends Error {
 // API BASE URL
 // ============================================================
 
-const rawApiUrl =
-  (import.meta.env.VITE_API_URL as string | undefined)
-    ?.trim();
+export function resolveApiBase(): string {
+  const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
 
+  // 1. Explicit VITE_API_URL provided at build time or runtime
+  if (rawApiUrl && rawApiUrl !== "undefined" && rawApiUrl !== "null" && rawApiUrl !== "") {
+    // Remove trailing slashes
+    const clean = rawApiUrl.replace(/\/+$/, "");
+    // If it already ends with /api, use it as is; otherwise append /api
+    return clean.endsWith("/api") ? clean : `${clean}/api`;
+  }
 
-const API_BASE = rawApiUrl
-  ? `${rawApiUrl.replace(/\/+$/, "")}/api`
-  : "/api";
+  // 2. Local development fallback (Vite dev server or localhost hostname)
+  if (
+    import.meta.env.DEV ||
+    (typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"))
+  ) {
+    return "http://localhost:8000/api";
+  }
 
+  // 3. Production fallback (relative /api)
+  if (typeof window !== "undefined") {
+    console.warn(
+      "[PharmaGuard AI] WARNING: VITE_API_URL environment variable was not set during build. " +
+        "API requests are falling back to relative '/api', which will be routed to the frontend server."
+    );
+  }
+  return "/api";
+}
+
+export const API_BASE = resolveApiBase();
 
 console.log(
   "[PharmaGuard] API base URL:",
   API_BASE,
-  rawApiUrl ? "(from VITE_API_URL)" : "(fallback — using Vite proxy or same-origin)"
+  import.meta.env.VITE_API_URL ? "(from VITE_API_URL)" : "(local/environment fallback)"
 );
 
 
@@ -97,23 +120,16 @@ export async function apiRequest<T = unknown>(
       ? endpoint
       : `/${endpoint}`;
 
-
   // Strip a leading /api prefix if the caller accidentally included it —
   // API_BASE already ends with /api.
-  if (
-    cleanEndpoint.startsWith("/api/")
-  ) {
-
-    cleanEndpoint =
-      cleanEndpoint.replace(
-        "/api",
-        ""
-      );
-  }
-
+  cleanEndpoint = cleanEndpoint.replace(/^\/api(\/|$)/, "/");
 
   const url =
     `${API_BASE}${cleanEndpoint}`;
+
+  if (import.meta.env.DEV) {
+    console.debug(`[PharmaGuard API] ${customConfig.method || "GET"} ${url}`);
+  }
 
 
   const reqHeaders: Record<
@@ -233,14 +249,22 @@ export async function apiRequest<T = unknown>(
     }
 
   } else if (!response.ok) {
-    // Non-JSON error response — backend probably returned HTML (e.g., Nginx 404
-    // when VITE_API_URL is wrong or the backend is not reachable via the proxy).
+    if (response.status === 405) {
+      throw new ApiError(
+        "Server error 405 (Not Allowed): The request was received by the frontend web server (Nginx) instead of the FastAPI backend. " +
+        "Please ensure VITE_API_URL is configured in your Render service to point to your FastAPI backend URL (e.g. https://pharmaguard-backend.onrender.com) and trigger a redeploy with clean build cache.",
+        405
+      );
+    }
+
+    // Non-JSON error response — backend probably returned HTML (e.g., Nginx 404/502
+    // when VITE_API_URL is wrong or the backend is not reachable).
     let bodyPreview = "";
     try {
       const text = await response.text();
       // If it looks like HTML, give a human-readable hint.
       if (text.trim().startsWith("<")) {
-        bodyPreview = " (Nginx/server returned HTML — check VITE_API_URL is set correctly)";
+        bodyPreview = " (Server returned HTML — check that VITE_API_URL is set to the FastAPI backend URL)";
       }
     } catch {
       // ignore
