@@ -182,7 +182,6 @@ export async function apiRequest<T = unknown>(
       );
 
   } catch (error: unknown) {
-
     // Network error: backend unreachable, CORS failure, or no internet.
     const rawMsg =
       error instanceof Error
@@ -190,33 +189,16 @@ export async function apiRequest<T = unknown>(
         : "Network error.";
 
     throw new ApiError(
-      `Unable to connect to the authentication server. (${rawMsg})`,
+      `Unable to connect to the API server. (${rawMsg})`,
       0
     );
   }
 
-
   // ----------------------------------------------------------
-  // Unauthorized — clear in-memory token
+  // Unauthorized handler (in-memory token cleanup only)
   // ----------------------------------------------------------
-
-  if (
-    response.status === 401
-  ) {
-
+  if (response.status === 401) {
     activeAuthToken = null;
-
-    window.dispatchEvent(
-      new CustomEvent(
-        "pharmaguard:unauthorized",
-        {
-          detail: {
-            message:
-              "Your session has expired. Please sign in again.",
-          },
-        }
-      )
-    );
   }
 
 

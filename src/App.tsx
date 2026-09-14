@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
-import { AuthProvider, useAuth } from './hooks/useAuth';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import AdverseEvents from './pages/AdverseEvents';
@@ -12,43 +11,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import PatientDetail from './pages/PatientDetail';
 import DemoAnalysis from './pages/DemoAnalysis';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import './styles.css';
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#07101f',
-        color: 'var(--text-secondary)',
-        fontSize: 14,
-      }}>
-        Loading PharmaGuard AI…
-      </div>
-    );
-  }
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  return <>{children}</>;
-}
-
-function PublicAuthRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return null;
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <>{children}</>;
-}
 
 function WorkspaceShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -62,20 +25,20 @@ function WorkspaceShell() {
       />
       <main className="app-main">
         <Routes>
-          <Route path="/"                element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard"       element={<Dashboard        {...pageProps} />} />
-          <Route path="/adverse-events"  element={<AdverseEvents    {...pageProps} />} />
-          <Route path="/patients"        element={<PatientDetail    {...pageProps} />} />
-          <Route path="/patients/:id"    element={<PatientDetail    {...pageProps} />} />
-          <Route path="/demo-patient"    element={<PatientDetail    {...pageProps} />} />
-          <Route path="/demo-data"       element={<PatientDetail    {...pageProps} />} />
-          <Route path="/demo-analysis"   element={<DemoAnalysis     {...pageProps} />} />
-          <Route path="/signal-analysis" element={<SignalAnalysis   {...pageProps} />} />
-          <Route path="/ctd-documents"   element={<CTDDocuments     {...pageProps} />} />
-          <Route path="/gap-detection"   element={<GapDetection     {...pageProps} />} />
-          <Route path="/reports"         element={<Reports          {...pageProps} />} />
-          <Route path="/settings"        element={<Settings         {...pageProps} />} />
-          <Route path="*"                element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard {...pageProps} />} />
+          <Route path="/adverse-events" element={<AdverseEvents {...pageProps} />} />
+          <Route path="/patients" element={<PatientDetail {...pageProps} />} />
+          <Route path="/patients/:id" element={<PatientDetail {...pageProps} />} />
+          <Route path="/demo-patient" element={<PatientDetail {...pageProps} />} />
+          <Route path="/demo-data" element={<PatientDetail {...pageProps} />} />
+          <Route path="/demo-analysis" element={<DemoAnalysis {...pageProps} />} />
+          <Route path="/signal-analysis" element={<SignalAnalysis {...pageProps} />} />
+          <Route path="/ctd-documents" element={<CTDDocuments {...pageProps} />} />
+          <Route path="/gap-detection" element={<GapDetection {...pageProps} />} />
+          <Route path="/reports" element={<Reports {...pageProps} />} />
+          <Route path="/settings" element={<Settings {...pageProps} />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
     </div>
@@ -93,18 +56,14 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Authentication Pages */}
-        <Route path="/login" element={<PublicAuthRoute><Login /></PublicAuthRoute>} />
-        <Route path="/register" element={<PublicAuthRoute><Register /></PublicAuthRoute>} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Redirect any legacy auth routes directly to dashboard */}
+        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/forgot-password" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/reset-password" element={<Navigate to="/dashboard" replace />} />
 
-        {/* Protected Workspace Pages */}
-        <Route path="/*" element={
-          <ProtectedRoute>
-            <WorkspaceShell />
-          </ProtectedRoute>
-        } />
+        {/* Application Workspace — no authentication required */}
+        <Route path="/*" element={<WorkspaceShell />} />
       </Routes>
     </BrowserRouter>
   );
@@ -113,9 +72,7 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <AppContent />
     </AppProvider>
   );
 }

@@ -1,11 +1,10 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, AlertTriangle, TrendingUp,
   FileText, Search, BarChart2, Settings,
-  Shield, X, Users, User, LogOut,
+  Shield, X, Users, User,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { useAuth } from '../hooks/useAuth';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -13,9 +12,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
-  const navigate = useNavigate();
   const { state } = useAppContext();
-  const { user, isDemoMode, logout } = useAuth();
   const hasDemo = state.adverseEvents.some(e => e.isDemo);
 
   const navItems = [
@@ -35,8 +32,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  const displayName = user?.fullName || state.userName || 'Safety Reviewer';
-  const roleSubtitle = isDemoMode ? 'Demo Session' : (user?.role || 'Pharmacovigilance');
+  const displayName = state.userName || 'Safety Reviewer';
+  const roleSubtitle = hasDemo ? 'Demo Mode' : 'Pharmacovigilance';
 
   return (
     <>
@@ -147,7 +144,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             width: 32,
             height: 32,
             borderRadius: 8,
-            background: isDemoMode ? 'linear-gradient(135deg, #F5A623 0%, #d48815 100%)' : 'linear-gradient(135deg, var(--accent) 0%, #6CB8FF 100%)',
+            background: hasDemo ? 'linear-gradient(135deg, #F5A623 0%, #d48815 100%)' : 'linear-gradient(135deg, var(--accent) 0%, #6CB8FF 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -164,28 +161,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               {roleSubtitle}
             </div>
           </div>
-          <button
-            id="sidebar-logout-btn"
-            onClick={async () => {
-              await logout();
-              navigate('/login');
-            }}
-            title="Sign out"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-tertiary)',
-              cursor: 'pointer',
-              display: 'flex',
-              padding: 4,
-              transition: 'color 120ms ease',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-            aria-label="Sign out"
-          >
-            <LogOut size={15} />
-          </button>
         </div>
       </aside>
     </>

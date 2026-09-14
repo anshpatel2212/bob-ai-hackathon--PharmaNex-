@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Menu, Sun, Moon, Search, Bell, User, X, LogOut, ShieldAlert,
+  Menu, Sun, Moon, Search, Bell, User, X, ShieldAlert,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { useAuth } from '../hooks/useAuth';
 import Button from './Button';
 
 interface HeaderProps {
@@ -17,7 +16,7 @@ interface HeaderProps {
 export default function Header({ title, subtitle, onMobileMenuOpen, actions }: HeaderProps) {
   const navigate = useNavigate();
   const { state, dispatch } = useAppContext();
-  const { user, isDemoMode, logout } = useAuth();
+  const hasDemo = state.adverseEvents.some(e => e.isDemo);
   const [globalSearch, setGlobalSearch] = useState('');
 
   function toggleTheme() {
@@ -25,7 +24,7 @@ export default function Header({ title, subtitle, onMobileMenuOpen, actions }: H
   }
 
   const criticalSignalsCount = state.signals.filter(s => s.priority === 'critical').length;
-  const displayName = user?.fullName || state.userName || 'Safety Reviewer';
+  const displayName = state.userName || 'Safety Reviewer';
 
   return (
     <header className="header" style={{
@@ -143,7 +142,7 @@ export default function Header({ title, subtitle, onMobileMenuOpen, actions }: H
         {actions}
 
         {/* DEMO MODE Badge */}
-        {isDemoMode && (
+        {hasDemo && (
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -260,7 +259,7 @@ export default function Header({ title, subtitle, onMobileMenuOpen, actions }: H
             width: 24,
             height: 24,
             borderRadius: '50%',
-            background: isDemoMode ? 'linear-gradient(135deg, #F5A623 0%, #d48815 100%)' : 'linear-gradient(135deg, var(--accent) 0%, #6CB8FF 100%)',
+            background: hasDemo ? 'linear-gradient(135deg, #F5A623 0%, #d48815 100%)' : 'linear-gradient(135deg, var(--accent) 0%, #6CB8FF 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -271,21 +270,6 @@ export default function Header({ title, subtitle, onMobileMenuOpen, actions }: H
           </div>
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>{displayName}</span>
         </button>
-
-        {/* Logout Button */}
-        <Button
-          id="header-logout-btn"
-          variant="ghost"
-          size="icon"
-          onClick={async () => {
-            await logout();
-            navigate('/login');
-          }}
-          data-tooltip="Sign out"
-          aria-label="Sign out"
-        >
-          <LogOut size={15} style={{ color: 'var(--text-tertiary)' }} />
-        </Button>
       </div>
     </header>
   );
