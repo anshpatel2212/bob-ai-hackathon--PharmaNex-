@@ -23,7 +23,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() == "production"
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true" if IS_PRODUCTION else "false").lower() == "true"
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "none" if (IS_PRODUCTION or COOKIE_SECURE) else "lax").lower()
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "none" if (IS_PRODUCTION and COOKIE_SECURE) else "lax").lower()
+# Modern browsers reject SameSite=None if Secure is False
+if not COOKIE_SECURE and COOKIE_SAMESITE == "none":
+    COOKIE_SAMESITE = "lax"
 
 
 def set_auth_cookie(response: Response, token: str) -> None:
@@ -55,7 +58,7 @@ def register(
     existing_user = db.query(User).filter(User.email == normalized_email).first()
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email already exists.",
         )
 
@@ -65,7 +68,7 @@ def register(
     new_user = User(
         full_name=data.full_name.strip(),
         email=normalized_email,
-        organization=data.organization.strip() if data.organization else None,
+        organization=data.organization.strip(),
         role=data.role.strip() if data.role else "Pharmacovigilance",
         password_hash=hashed_pwd,
         is_active=True,
@@ -102,18 +105,12 @@ def login(
     normalized_email = data.email.strip().lower()
     user = db.query(User).filter(User.email == normalized_email).first()
 
-    # Constant-time comparison or safe fallback to prevent timing attacks
-    if not user or not verify_password(data.password, user.password_hash):
+    # Verify user exists, is active, and password is correct without revealing existence
+    if not user or not user.is_active or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
             headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been deactivated. Please contact your administrator.",
         )
 
     # Generate JWT token
@@ -145,7 +142,7 @@ def logout(response: Response):
             samesite=COOKIE_SAMESITE,
             httponly=True,
         )
-    return MessageResponse(message="Logged out successfully.")
+    return MessageResponse(message="Logged out successfully")
 
 
 @router.get("/me", response_model=UserResponse)

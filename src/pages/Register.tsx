@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Check, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
@@ -19,8 +19,14 @@ const ROLES: UserRole[] = [
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, isLoading } = useAuth();
+  const { register, isLoading, isAuthenticated } = useAuth();
   const { dispatch } = useAppContext();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -54,6 +60,14 @@ export default function Register() {
   const hasLowercase = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const isPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasNumber;
+
+  const isFormValid =
+    fullName.trim().length >= 2 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+    organization.trim().length >= 1 &&
+    isPasswordValid &&
+    password === confirmPassword &&
+    agreeTerms;
 
   function validate(): boolean {
     const newErrors: typeof errors = {};
@@ -567,7 +581,7 @@ export default function Register() {
             variant="primary"
             size="lg"
             loading={isSubmitting}
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting || isLoading || !isFormValid}
             style={{
               width: '100%',
               borderRadius: 12,

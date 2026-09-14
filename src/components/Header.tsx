@@ -4,6 +4,7 @@ import {
   Menu, Sun, Moon, Search, Bell, User, X, ShieldAlert,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../hooks/useAuth';
 import Button from './Button';
 
 interface HeaderProps {
@@ -16,6 +17,7 @@ interface HeaderProps {
 export default function Header({ title, subtitle, onMobileMenuOpen, actions }: HeaderProps) {
   const navigate = useNavigate();
   const { state, dispatch } = useAppContext();
+  const { user } = useAuth();
   const hasDemo = state.adverseEvents.some(e => e.isDemo);
   const [globalSearch, setGlobalSearch] = useState('');
 
@@ -24,7 +26,7 @@ export default function Header({ title, subtitle, onMobileMenuOpen, actions }: H
   }
 
   const criticalSignalsCount = state.signals.filter(s => s.priority === 'critical').length;
-  const displayName = state.userName || 'Safety Reviewer';
+  const displayName = user?.fullName || state.userName || 'Safety Reviewer';
 
   return (
     <header className="header" style={{

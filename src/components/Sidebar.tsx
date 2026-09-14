@@ -1,10 +1,11 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, AlertTriangle, TrendingUp,
   FileText, Search, BarChart2, Settings,
-  Shield, X, Users, User,
+  Shield, X, Users, User, LogOut,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -12,7 +13,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+  const navigate = useNavigate();
   const { state } = useAppContext();
+  const { user, logout } = useAuth();
   const hasDemo = state.adverseEvents.some(e => e.isDemo);
 
   const navItems = [
@@ -32,8 +35,13 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  const displayName = state.userName || 'Safety Reviewer';
-  const roleSubtitle = hasDemo ? 'Demo Mode' : 'Pharmacovigilance';
+  const displayName = user?.fullName || state.userName || 'Safety Reviewer';
+  const roleSubtitle = hasDemo ? 'Demo Mode' : (user?.role || 'Pharmacovigilance');
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
 
   return (
     <>
@@ -131,9 +139,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           })}
         </nav>
 
-        {/* Bottom: User Profile */}
+        {/* Bottom: User Profile & Logout */}
         <div style={{
-          padding: '14px 16px',
+          padding: '12px 14px',
           borderTop: '1px solid var(--glass-border)',
           background: 'rgba(255,255,255,0.015)',
           display: 'flex',
@@ -161,6 +169,34 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               {roleSubtitle}
             </div>
           </div>
+          <button
+            id="sidebar-logout-btn"
+            onClick={handleLogout}
+            title="Sign Out"
+            aria-label="Sign Out"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-tertiary)',
+              cursor: 'pointer',
+              padding: 6,
+              borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 120ms ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--danger)';
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239, 68, 68, 0.1)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-tertiary)';
+              (e.currentTarget as HTMLButtonElement).style.background = 'none';
+            }}
+          >
+            <LogOut size={15} />
+          </button>
         </div>
       </aside>
     </>

@@ -153,6 +153,10 @@ MIGRATIONS = [
         "014_create_index_rep_user_id",
         "CREATE INDEX IF NOT EXISTS ix_rep_user_id ON reports (user_id)",
     ),
+    (
+        "015_ensure_users_organization_populated",
+        "UPDATE users SET organization = 'PharmaGuard Enterprise' WHERE organization IS NULL OR organization = ''",
+    ),
 ]
 
 

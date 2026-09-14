@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ShieldAlert, ArrowRight, Lock, Mail, AlertTriangle } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
@@ -8,8 +8,14 @@ import { useAppContext } from '../context/AppContext';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginDemo, isLoading, sessionExpiredMessage, clearSessionExpiredMessage } = useAuth();
+  const { login, loginDemo, isLoading, isAuthenticated, sessionExpiredMessage, clearSessionExpiredMessage } = useAuth();
   const { dispatch } = useAppContext();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

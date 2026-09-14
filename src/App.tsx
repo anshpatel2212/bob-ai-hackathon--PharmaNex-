@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { AuthProvider, useAuth } from './hooks/useAuth';
+import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import AdverseEvents from './pages/AdverseEvents';
@@ -11,6 +13,10 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import PatientDetail from './pages/PatientDetail';
 import DemoAnalysis from './pages/DemoAnalysis';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import './styles.css';
 
 function WorkspaceShell() {
@@ -45,6 +51,19 @@ function WorkspaceShell() {
   );
 }
 
+function UserSync() {
+  const { user } = useAuth();
+  const { dispatch } = useAppContext();
+
+  useEffect(() => {
+    if (user?.fullName) {
+      dispatch({ type: 'SET_USER_NAME', payload: user.fullName });
+    }
+  }, [user?.fullName, dispatch]);
+
+  return null;
+}
+
 function AppContent() {
   const { state } = useAppContext();
 
@@ -56,14 +75,21 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redirect any legacy auth routes directly to dashboard */}
-        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/register" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/forgot-password" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/reset-password" element={<Navigate to="/dashboard" replace />} />
+        {/* Public Authentication Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Application Workspace — no authentication required */}
-        <Route path="/*" element={<WorkspaceShell />} />
+        {/* Protected Application Workspace */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <WorkspaceShell />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
@@ -72,7 +98,11 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <AuthProvider>
+        <UserSync />
+        <AppContent />
+      </AuthProvider>
     </AppProvider>
   );
 }
+

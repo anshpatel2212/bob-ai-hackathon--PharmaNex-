@@ -75,7 +75,7 @@ export class ApiAuthServiceImpl implements IAuthService {
       const res = await api.post<BackendAuthResponse>('/auth/register', {
         full_name: data.fullName.trim(),
         email: data.email.trim().toLowerCase(),
-        organization: data.organization?.trim() || null,
+        organization: data.organization.trim(),
         role: data.role,
         password: data.password,
       });
