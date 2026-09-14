@@ -12,7 +12,22 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE = '/api';
+// Read backend API URL from Vite environment variable (Render production) or fallback to local /api proxy
+const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+const API_BASE = rawApiUrl
+  ? `${rawApiUrl.replace(/\/+$/, '')}/api`
+  : '/api';
+
+// In-memory Bearer token fallback for cross-origin environments
+let activeAuthToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  activeAuthToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return activeAuthToken;
+}
 
 interface RequestOptions extends RequestInit {
   data?: unknown;
@@ -22,20 +37,32 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { data, headers, ...customConfig } = options;
+  const { data, headers = {}, ...customConfig } = options;
 
-  const url = endpoint.startsWith('/')
-    ? `${API_BASE}${endpoint}`
-    : `${API_BASE}/${endpoint}`;
+  // Clean path to prevent double `/api/api`
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (cleanEndpoint.startsWith('/api/')) {
+    cleanEndpoint = cleanEndpoint.replace('/api', '');
+  }
+
+  const url = `${API_BASE}${cleanEndpoint}`;
+
+  // Default headers
+  const reqHeaders: Record<string, string> = {
+    Accept: 'application/json',
+    ...(data ? { 'Content-Type': 'application/json' } : {}),
+    ...(headers as Record<string, string>),
+  };
+
+  // Attach Bearer token fallback if available and not already set
+  if (activeAuthToken && !reqHeaders.Authorization) {
+    reqHeaders.Authorization = `Bearer ${activeAuthToken}`;
+  }
 
   const config: RequestInit = {
     ...customConfig,
     credentials: 'include', // Automatically transmit and store HttpOnly cookies
-    headers: {
-      Accept: 'application/json',
-      ...(data ? { 'Content-Type': 'application/json' } : {}),
-      ...headers,
-    },
+    headers: reqHeaders,
   };
 
   if (data !== undefined) {
@@ -52,7 +79,7 @@ export async function apiRequest<T = unknown>(
 
   // Handle Unauthorized (401)
   if (response.status === 401) {
-    // Notify application of session expiration
+    activeAuthToken = null;
     window.dispatchEvent(
       new CustomEvent('pharmaguard:unauthorized', {
         detail: { message: 'Your session has expired. Please sign in again.' },

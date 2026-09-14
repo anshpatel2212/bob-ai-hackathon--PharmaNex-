@@ -6,7 +6,7 @@ import type {
   RegisterData,
   AuthResult,
 } from '../types/auth';
-import { api, ApiError } from './api';
+import { api, ApiError, setAuthToken } from './api';
 
 // Interface matching backend response shape
 interface BackendUserResponse {
@@ -58,6 +58,10 @@ export class ApiAuthServiceImpl implements IAuthService {
         password: data.password,
       });
 
+      if (res.access_token) {
+        setAuthToken(res.access_token);
+      }
+
       const user = mapBackendUser(res.user);
       const session: AuthSession = {
         user,
@@ -85,6 +89,10 @@ export class ApiAuthServiceImpl implements IAuthService {
         password: credentials.password,
       });
 
+      if (res.access_token) {
+        setAuthToken(res.access_token);
+      }
+
       const user = mapBackendUser(res.user);
       const session: AuthSession = {
         user,
@@ -109,6 +117,8 @@ export class ApiAuthServiceImpl implements IAuthService {
       await api.post('/auth/logout');
     } catch {
       // Silently proceed with local cleanup even if network fails
+    } finally {
+      setAuthToken(null);
     }
   }
 

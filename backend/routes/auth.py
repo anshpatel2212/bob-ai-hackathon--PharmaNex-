@@ -21,8 +21,9 @@ from backend.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax").lower()
+IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() == "production"
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true" if IS_PRODUCTION else "false").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "none" if (IS_PRODUCTION or COOKIE_SECURE) else "lax").lower()
 
 
 def set_auth_cookie(response: Response, token: str) -> None:

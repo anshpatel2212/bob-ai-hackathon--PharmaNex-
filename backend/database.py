@@ -5,11 +5,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Retrieve database URL from environment
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://pharmaguard:pharmaguard_secret@localhost:5432/pharmaguard_db"
-)
+
+def get_database_url() -> str:
+    """Retrieve database URL from environment, ensuring Render postgres:// prefix is converted."""
+    url = os.getenv(
+        "DATABASE_URL",
+        "postgresql://pharmaguard:pharmaguard_secret@localhost:5432/pharmaguard_db"
+    )
+    # Render provides PostgreSQL URLs starting with postgres:// which SQLAlchemy 1.4+ rejects
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
+DATABASE_URL = get_database_url()
 
 # Configure engine options based on dialect
 connect_args = {}

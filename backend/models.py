@@ -35,9 +35,27 @@ class User(Base):
 
     # Relationships to user-owned data
     adverse_events = relationship("AdverseEvent", back_populates="user", cascade="all, delete-orphan")
+    datasets = relationship("Dataset", back_populates="user", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     signals = relationship("Signal", back_populates="user", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
+
+
+class Dataset(Base):
+    __tablename__ = "datasets"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    is_demo = Column(Boolean, default=False, nullable=False, index=True)
+
+    name = Column(String(255), nullable=False)
+    filename = Column(String(255), nullable=False)
+    file_type = Column(String(50), nullable=False, default="csv")
+    record_count = Column(Integer, default=0, nullable=False)
+    file_size = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    user = relationship("User", back_populates="datasets")
 
 
 class AdverseEvent(Base):
