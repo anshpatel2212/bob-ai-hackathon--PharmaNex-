@@ -18,7 +18,7 @@ def get_db() -> Generator[Session, None, None]:
 def extract_token_from_request(request: Request) -> Optional[str]:
     """Extract JWT token from HttpOnly cookie or Authorization Bearer header."""
     # 1. Preferred secure method: HttpOnly cookie
-    token = request.cookies.get("access_token")
+    token = request.cookies.get("pharmaguard_access_token") or request.cookies.get("access_token")
     if token:
         # Strip potential Bearer prefix if stored with it
         if token.startswith("Bearer "):

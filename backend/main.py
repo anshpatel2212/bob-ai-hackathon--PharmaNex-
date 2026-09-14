@@ -60,6 +60,7 @@ origins = [
     "http://localhost:8080",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
+    "https://bob-ai-hackathon-pharmanex.onrender.com",
 ]
 
 frontend_url = os.getenv("FRONTEND_URL")

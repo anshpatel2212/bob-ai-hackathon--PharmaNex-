@@ -23,23 +23,37 @@ npm run dev
 ```
 
 ### 2. Backend Setup
-```bash
-# Create and activate virtual environment
-uv venv backend/.venv --python 3.11
-# On Windows:
-backend\.venv\Scripts\activate
-# On macOS/Linux:
-source backend/.venv/bin/activate
 
-# Install dependencies
-pip install -r backend/requirements.txt
+#### Windows PowerShell Setup (Recommended)
+On Windows, running `pip` directly may return `"pip : The term 'pip' is not recognized..."` if Python's `Scripts\` folder is not on your system PATH. Using the standard Windows Python launcher `py` solves this completely:
 
-# Run migrations
-alembic -c backend/alembic.ini upgrade head
+1. **Check Python version:**
+   ```powershell
+   py --version
+   ```
+   *(If `py` is not recognized, install or repair Python from [python.org](https://www.python.org/downloads/) and ensure "Add python.exe to PATH" and "py launcher" are checked).*
 
-# Start development API server (http://127.0.0.1:8000)
-uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-```
+2. **Restore pip if missing:**
+   ```powershell
+   py -m ensurepip --upgrade
+   ```
+
+3. **Upgrade pip:**
+   ```powershell
+   py -m pip install --upgrade pip
+   ```
+
+4. **Install backend dependencies:**
+   ```powershell
+   py -m pip install -r backend/requirements.txt
+   ```
+
+5. **Start backend locally:**
+   ```powershell
+   py -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+*(Optional: If using the virtual environment in `backend/.venv`, activate it with `.\backend\.venv\Scripts\Activate.ps1` or run `.\backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`).*
 
 ---
 
@@ -74,8 +88,8 @@ PostgreSQL      (Render Managed Database)
    - **React Static Site** (`pharmaguard-frontend`)
 5. Once the services are created:
    - Copy the backend URL (e.g., `https://pharmaguard-backend.onrender.com`).
-   - In the frontend settings, set `VITE_API_URL` to your backend URL and trigger a re-deploy.
-   - In the backend settings, set `FRONTEND_URL` to your frontend URL (e.g., `https://pharmaguard-frontend.onrender.com`).
+   - In the frontend settings, set `VITE_API_URL` to your backend URL (e.g. `https://pharmaguard-backend.onrender.com` — **do NOT append `/api`**).
+   - In the backend settings, verify `FRONTEND_URL` is set to `https://bob-ai-hackathon-pharmanex.onrender.com`.
 
 ---
 
@@ -92,24 +106,25 @@ PostgreSQL      (Render Managed Database)
 1. Go to **New +** → **Web Service** and connect your repository.
 2. Name: `pharmaguard-backend`
 3. Environment: `Python`
-4. Build Command:
+4. Root Directory: `/`
+5. Build Command:
    ```bash
    pip install -r backend/requirements.txt
    ```
-5. Start Command:
+6. Start Command:
    ```bash
-   alembic -c backend/alembic.ini upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+   uvicorn backend.main:app --host 0.0.0.0 --port $PORT
    ```
-6. Health Check Path: `/health`
-7. Add Environment Variables:
-   - `DATABASE_URL`: *(Your Render PostgreSQL Connection String)*
+7. Health Check Path: `/health`
+8. Add Environment Variables:
+   - `DATABASE_URL`: *(Your Render PostgreSQL Internal Database URL)*
    - `JWT_SECRET`: *(Generate a secure 64-char key using `openssl rand -hex 32`)*
    - `ACCESS_TOKEN_EXPIRE_MINUTES`: `30`
    - `ENVIRONMENT`: `production`
    - `COOKIE_SECURE`: `true`
    - `COOKIE_SAMESITE`: `none`
-   - `FRONTEND_URL`: `https://<your-frontend-subdomain>.onrender.com`
-8. Click **Create Web Service**.
+   - `FRONTEND_URL`: `https://bob-ai-hackathon-pharmanex.onrender.com`
+9. Click **Create Web Service**.
 
 #### Step 3: Deploy the Frontend (Static Site)
 1. Go to **New +** → **Static Site** and connect your repository.
@@ -120,7 +135,7 @@ PostgreSQL      (Render Managed Database)
    ```
 4. Publish Directory: `dist`
 5. Add Environment Variable:
-   - `VITE_API_URL`: `https://<your-backend-subdomain>.onrender.com`
+   - `VITE_API_URL`: `https://<your-backend-subdomain>.onrender.com` *(Do NOT append `/api`; `src/services/api.ts` automatically appends `/api`)*
 6. Click **Create Static Site**.
    *(SPA routing is automatically handled via `public/_redirects`)*.
 

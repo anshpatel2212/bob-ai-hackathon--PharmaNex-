@@ -16,7 +16,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: alembic -c backend/alembic.ini upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -35,8 +35,7 @@ services:
       - key: COOKIE_SAMESITE
         value: none
       - key: FRONTEND_URL
-        sync: false
-        # Set to your deployed Render Static Site URL, e.g. https://pharmaguard-frontend.onrender.com
+        value: "https://bob-ai-hackathon-pharmanex.onrender.com"
 
   # ----------------------------------------------------------------------------
   # 2. React SPA Frontend Static Site
@@ -54,4 +53,4 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
-        # Set to your deployed Render Backend Web Service URL, e.g. https://pharmaguard-backend.onrender.com
+        # Set to your deployed Render Backend Web Service URL, e.g. https://pharmaguard-backend.onrender.com (Do NOT append /api)

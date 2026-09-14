@@ -1,40 +1,46 @@
-# ==============================================================================
-# Stage 1: Build Phase
-# ==============================================================================
+# ============================================================
+# Stage 1 — React/Vite Build
+# ============================================================
+
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies utilizing Docker cache
+# Copy package files first for Docker cache
 COPY package.json package-lock.json ./
+
+# Install dependencies
 RUN npm ci
 
-# Copy project source and configuration files
+# Copy application source
 COPY . .
 
-# Build the production bundle
+# Build React/Vite application
 RUN npm run build
 
-# ==============================================================================
-# Stage 2: Production Runtime Phase
-# ==============================================================================
-FROM nginx:1.27-alpine AS runner
 
-# Remove default nginx website configuration
-RUN rm -rf /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*
+# ============================================================
+# Stage 2 — Nginx Production Server
+# ============================================================
 
-# Copy custom Nginx configuration optimized for React SPA
+FROM nginx:1.27-alpine
+
+# Remove default Nginx configuration and files
+RUN rm -rf /etc/nginx/conf.d/default.conf \
+    /usr/share/nginx/html/*
+
+# Copy our Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy production artifacts from builder stage
+# Copy React production build
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expose HTTP port
+# Render exposes the container on port 80
 EXPOSE 80
 
-# Health check to monitor container readiness
+# Container health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost/health || exit 1
+    CMD wget -qO- http://localhost/health || exit 1
 
-# Start Nginx in foreground mode
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -29,16 +29,17 @@ COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "none" if (IS_PRODUCTION or COOKI
 def set_auth_cookie(response: Response, token: str) -> None:
     """Helper to attach secure HttpOnly session cookie."""
     max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        max_age=max_age,
-        expires=max_age,
-        httponly=True,
-        secure=COOKIE_SECURE,
-        samesite=COOKIE_SAMESITE,
-        path="/",
-    )
+    for key in ("access_token", "pharmaguard_access_token"):
+        response.set_cookie(
+            key=key,
+            value=token,
+            max_age=max_age,
+            expires=max_age,
+            httponly=True,
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+            path="/",
+        )
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -136,13 +137,14 @@ def login(
 @router.post("/logout", response_model=MessageResponse)
 def logout(response: Response):
     """Clear session cookie and invalidate client-side authentication."""
-    response.delete_cookie(
-        key="access_token",
-        path="/",
-        secure=COOKIE_SECURE,
-        samesite=COOKIE_SAMESITE,
-        httponly=True,
-    )
+    for key in ("access_token", "pharmaguard_access_token"):
+        response.delete_cookie(
+            key=key,
+            path="/",
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+            httponly=True,
+        )
     return MessageResponse(message="Logged out successfully.")
 
 
