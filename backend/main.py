@@ -28,7 +28,12 @@ async def lifespan(app: FastAPI):
         run_migrations()
         logger.info("Database schema migrations completed successfully.")
     except Exception as e:
-        logger.error(f"Error executing database migrations: {e}")
+        logger.error(f"FATAL: Database migration failed — {e}", exc_info=True)
+        # In production, re-raise so the process exits and Render marks
+        # the service as unhealthy instead of silently starting with no tables.
+        if os.getenv("ENVIRONMENT", "development").lower() == "production":
+            raise RuntimeError(f"Database migration failed: {e}") from e
+        logger.warning("Running in non-production mode — continuing despite migration failure.")
     yield
 
 

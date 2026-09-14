@@ -52,5 +52,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false
-        # Set to your deployed Render Backend Web Service URL, e.g. https://pharmaguard-backend.onrender.com (Do NOT append /api)
+        value: "https://pharmaguard-backend.onrender.com"
+        # IMPORTANT: Override this in the Render dashboard if your backend URL differs.
+        # Find the exact URL in Render → pharmaguard-backend → Settings → URL
+        # Do NOT append /api — api.ts already appends it.
