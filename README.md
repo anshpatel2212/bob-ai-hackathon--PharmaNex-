@@ -50,10 +50,10 @@ On Windows, running `pip` directly may return `"pip : The term 'pip' is not reco
 
 5. **Start backend locally:**
    ```powershell
-   py -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+   py -m uvicorn backend.main:app --reload --reload-dir backend --host 127.0.0.1 --port 8000
    ```
 
-*(Optional: If using the virtual environment in `backend/.venv`, activate it with `.\backend\.venv\Scripts\Activate.ps1` or run `.\backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`).*
+*(Optional: If using the virtual environment in `backend/.venv`, activate it with `.\backend\.venv\Scripts\Activate.ps1` or run `.\backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --reload-dir backend --host 127.0.0.1 --port 8000`).*
 
 ---
 
