@@ -1,0 +1,91 @@
+# =============================================================================
+# HACKATHON SUBMISSION METADATA
+# =============================================================================
+# PharmaGuard AI — PharmaNex
+# =============================================================================
+
+team:
+  name: "PharmaNex"
+  track: "AI"
+  lead:
+    name: "Devansh Patel"
+    email: "25ce073@charusat.edu.in"
+  members:
+    - name: "Ansh Patel"
+      email: ""
+    - name: "Prince Patel"
+      email: ""
+    - name: "Saiyam Patel"
+      email: ""
+
+submission:
+  title: "PharmaGuard AI"
+
+  problem_statement: >
+    Pharmaceutical safety and regulatory teams must analyze adverse-event data
+    and large CTD submission packages to identify potential safety signals and
+    missing or incomplete regulatory documentation. Manual review is time-consuming,
+    difficult to scale, and can make it harder to identify submission-readiness gaps
+    consistently.
+
+  solution_summary: >
+    PharmaGuard AI is an AI-assisted platform that helps pharmacovigilance and
+    regulatory teams analyze adverse-event data for safety signals and evaluate CTD
+    documents for missing, incomplete, or review-required sections. It combines
+    evidence-based gap detection, regulatory readiness scoring, and actionable
+    recommendations in a single dashboard.
+
+  key_features:
+    - "AI-assisted adverse-event safety signal detection and risk classification"
+    - "Evidence-based CTD document section detection and gap analysis"
+    - "Dynamic regulatory submission readiness scoring"
+    - "Critical and recommended gap prioritization with actionable recommendations"
+    - "Interactive safety intelligence and regulatory readiness dashboard"
+
+  tech_stack:
+    languages:
+      - "Python"
+      - "TypeScript"
+      - "JavaScript"
+      - "HTML"
+      - "CSS"
+    frameworks:
+      - "FastAPI"
+      - "React"
+      - "Vite"
+    ibm_technologies:
+      - "IBM Bob"
+    databases:
+      - "PostgreSQL"
+    other:
+      - "Docker"
+      - "Nginx"
+      - "GitHub"
+      - "Render"
+
+  what_we_are_most_proud_of: >
+    We are most proud of bringing pharmacovigilance safety analysis and CTD
+    submission-readiness checking together in one focused platform. The strongest
+    part of the solution is the evidence-based Gap Detection workflow, which is
+    designed to analyze uploaded documents, identify CTD sections, classify gaps,
+    provide supporting evidence, and calculate readiness dynamically rather than
+    relying on hardcoded results.
+
+  known_limitations: >
+    PharmaGuard AI is an AI-assisted prototype developed for a hackathon and is
+    not a substitute for qualified pharmacovigilance or regulatory review. CTD
+    applicability can vary by region, submission type, and product, so some results
+    may require human validation. The current implementation may not cover every
+    regulatory-region-specific requirement or every document/OCR format.
+
+# =============================================================================
+# ARTIFACT LOCATIONS
+# =============================================================================
+artifacts:
+  source_code: "src/"
+  setup_guide: "docs/setup-guide.md"
+  architecture_doc: "docs/architecture.md"
+  demo_video: "demo/demo-video-link.txt"
+  live_demo: "demo/live-demo-url.txt"
+  screenshots: "demo/screenshots/"
+  presentation: "presentation/"
