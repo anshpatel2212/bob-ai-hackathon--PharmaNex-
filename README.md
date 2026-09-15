@@ -11,7 +11,7 @@
 | **Team Name** | PharmaNex |
 | **Track** | AI |
 | **Team Lead** | Devansh Patel — 25ce073@charusat.edu.in |
-| **Members** | Ansh Patel, Prince Patel, Saiyam Patel |
+| **Members** | Ansh Patel, Prince Patel, Saiyam Purabiya |
 
 ---
 
