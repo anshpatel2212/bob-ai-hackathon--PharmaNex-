@@ -1,6 +1,13 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, field_validator, AliasChoices
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+    AliasChoices,
+)
 
 
 class UserRegister(BaseModel):
@@ -14,6 +21,19 @@ class UserRegister(BaseModel):
     organization: str = Field(..., min_length=1, max_length=200)
     role: str = Field(default="Pharmacovigilance", max_length=100)
     password: str = Field(..., min_length=8, max_length=128)
+    confirm_password: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("confirm_password", "confirmPassword"),
+    )
+    agree_terms: Optional[bool] = Field(
+        default=None,
+        validation_alias=AliasChoices("agree_terms", "agreeTerms"),
+    )
+
+    model_config = {
+        "extra": "ignore",
+        "populate_by_name": True,
+    }
 
     @field_validator("password")
     @classmethod
@@ -28,10 +48,21 @@ class UserRegister(BaseModel):
             raise ValueError("Password must contain at least one number.")
         return v
 
+    @model_validator(mode="after")
+    def validate_passwords_match(self):
+        if self.confirm_password is not None and self.confirm_password != self.password:
+            raise ValueError("Passwords do not match.")
+        return self
+
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=1)
+
+    model_config = {
+        "extra": "ignore",
+        "populate_by_name": True,
+    }
 
 
 class UserResponse(BaseModel):

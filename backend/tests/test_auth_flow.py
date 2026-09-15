@@ -1,7 +1,7 @@
 import sys
 import uuid
 from starlette.testclient import TestClient
-from backend.main import app
+from backend.main import app, extract_registered_routes
 from backend.database import SessionLocal
 from backend.models import User
 
@@ -10,7 +10,40 @@ client = TestClient(app)
 def run_tests():
     print("=== STARTING BACKEND AUTHENTICATION TEST SUITE ===")
     
-    # 1. Health Checks
+    # 0. Verify Programmatic Routes
+    all_routes = extract_registered_routes(app)
+    routes_map = {}
+    for r in all_routes:
+        methods = r.get("methods") or []
+        path = r.get("path")
+        if path:
+            for m in methods:
+                routes_map.setdefault(m, set()).add(path)
+
+    expected_routes = [
+        ("GET", "/"),
+        ("GET", "/health"),
+        ("GET", "/api/health"),
+        ("GET", "/api/debug/routes"),
+        ("POST", "/api/auth/register"),
+        ("POST", "/api/auth/login"),
+        ("GET", "/api/auth/me"),
+        ("POST", "/api/auth/logout"),
+    ]
+    for method, path in expected_routes:
+        assert path in routes_map.get(method, set()), f"Missing expected route: {method} {path}"
+    print("[PASS] Programmatic routes inspection passed")
+
+    # 1. Health & Root Checks
+    r = client.get("/")
+    assert r.status_code == 200, f"GET / failed: {r.status_code} - {r.text}"
+    root_data = r.json()
+    assert root_data["status"] == "ok"
+    assert root_data["service"] == "PharmaGuard AI Backend"
+    assert root_data["version"] == "1.0.0"
+    assert root_data["message"] == "FastAPI backend is running"
+    print("[PASS] Root check GET /")
+
     r = client.get("/health")
     assert r.status_code == 200, f"/health failed: {r.status_code}"
     assert r.json() == {"status": "ok"}, f"Unexpected health response: {r.json()}"
@@ -18,11 +51,40 @@ def run_tests():
 
     r = client.get("/api/health")
     assert r.status_code == 200, f"/api/health failed: {r.status_code}"
-    assert r.json()["status"] == "healthy", f"Unexpected api health response: {r.json()}"
+    api_health = r.json()
+    assert api_health["status"] == "healthy"
+    assert api_health["service"] == "PharmaGuard AI API"
+    assert api_health["version"] == "1.0.0"
     print("[PASS] Health check /api/health")
 
-    # 2. Registration with valid data
+    r = client.get("/api/debug/routes")
+    assert r.status_code == 200, f"/api/debug/routes failed: {r.status_code}"
+    assert "routes" in r.json()
+    print("[PASS] Diagnostic endpoint /api/debug/routes")
+
+    # 2. Registration with full prompt payload (camelCase + confirmPassword + agreeTerms)
     test_id = str(uuid.uuid4())[:8]
+    prompt_email = f"prompt_user_{test_id}@example.com"
+    prompt_payload = {
+        "fullName": "Test User",
+        "email": prompt_email,
+        "organization": "Test Organization",
+        "role": "Research",
+        "password": "TestPassword123",
+        "confirmPassword": "TestPassword123",
+        "agreeTerms": True,
+    }
+    r_prompt = client.post("/api/auth/register", json=prompt_payload)
+    assert r_prompt.status_code == 201, f"Register with prompt payload failed: {r_prompt.status_code} - {r_prompt.text}"
+    prompt_data = r_prompt.json()
+    assert prompt_data["user"]["full_name"] == "Test User"
+    assert prompt_data["user"]["email"] == prompt_email.lower()
+    assert prompt_data["user"]["organization"] == "Test Organization"
+    assert prompt_data["user"]["role"] == "Research"
+    assert "password_hash" not in prompt_data["user"]
+    print("[PASS] Registration with prompt payload (camelCase, confirmPassword, agreeTerms)")
+
+    # 3. Registration with snake_case payload
     test_email = f"testuser_{test_id}@pharmaguard.ai"
     test_password = "SecurePassword123"
     
@@ -45,20 +107,7 @@ def run_tests():
     # Verify cookie was set
     cookies = r.cookies
     assert "access_token" in cookies or "pharmaguard_access_token" in cookies, "Auth cookie not set in register response"
-    print("[PASS] Registration with valid payload")
-
-    # 3. Registration with camelCase alias (fullName)
-    alias_email = f"testuser_alias_{test_id}@pharmaguard.ai"
-    alias_payload = {
-        "fullName": "Dr. Alias Test",
-        "email": alias_email,
-        "organization": "Alias Health",
-        "role": "Regulatory Affairs",
-        "password": "SecurePassword123",
-    }
-    r_alias = client.post("/api/auth/register", json=alias_payload)
-    assert r_alias.status_code == 201, f"Register with alias failed: {r_alias.status_code} - {r_alias.text}"
-    print("[PASS] Registration with camelCase fullName alias")
+    print("[PASS] Registration with valid snake_case payload")
 
     # 4. Duplicate Registration Rejection (HTTP 409)
     r_dup = client.post("/api/auth/register", json=reg_payload)

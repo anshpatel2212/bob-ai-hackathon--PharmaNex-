@@ -70,14 +70,16 @@ export interface IAuthService {
 export class ApiAuthServiceImpl implements IAuthService {
   async register(data: RegisterData): Promise<AuthResult> {
     try {
-      // Only send fields the backend schema expects.
-      // Never send confirmPassword or agreeTerms to the backend.
+      // Send registration payload supported by backend schema
       const res = await api.post<BackendAuthResponse>('/auth/register', {
+        fullName: data.fullName.trim(),
         full_name: data.fullName.trim(),
         email: data.email.trim().toLowerCase(),
         organization: data.organization.trim(),
         role: data.role,
         password: data.password,
+        confirmPassword: data.confirmPassword,
+        agreeTerms: data.agreeTerms,
       });
 
       if (res.access_token) {
